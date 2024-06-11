@@ -19,6 +19,68 @@
 #include <stdio.h>
 #include <vector>
 
+#if defined(__linux__) && defined(__x86_64__)
+#include <xmmintrin.h>
+#include <pmmintrin.h>
+
+#elif __APPLE__ && __aarch64__
+#include <fenv.h>
+
+#endif
+
+double multiply_doubles(size_t repeat, double double_1, double double_2)
+{
+
+  double res;
+
+  for (size_t i = 0; i < repeat; i++)
+  {
+
+    res = double_1 * double_2;
+  }
+
+  return res;
+}
+
+double divide_doubles(size_t repeat, double double_1, double double_2)
+{
+  double res;
+
+  for (size_t i = 0; i < repeat; i++)
+  {
+
+    res = double_1 / double_2;
+  }
+
+  return res;
+}
+
+double add_doubles(size_t repeat, double double_1, double double_2)
+{
+  double res;
+
+  for (size_t i = 0; i < repeat; i++)
+  {
+
+    res = double_1 + double_2;
+  }
+
+  return res;
+}
+
+float sub_doubles(size_t repeat, double double_1, double double_2)
+{
+
+  double res;
+  for (size_t i = 0; i < repeat; i++)
+  {
+
+    res = double_1 - double_2;
+  }
+
+  return res;
+}
+
 float multiply_floats(size_t repeat, float float_1, float float_2)
 {
 
@@ -61,8 +123,9 @@ float add_floats(size_t repeat, float float_1, float float_2)
 
 float sub_floats(size_t repeat, float float_1, float float_2)
 {
-  (void)repeat;
+
   float res;
+
   for (size_t i = 0; i < repeat; i++)
   {
 
@@ -88,6 +151,7 @@ event_aggregate time_it_ns(T const &function, size_t repeat, float float_1, floa
       printf("bug\n");
     }
   }
+  // for (size_t i = 0; i < repeat; i++) {
   collector.start();
   float ts = function(repeat, float_1, float_2);
   if (ts < 0)
@@ -96,6 +160,7 @@ event_aggregate time_it_ns(T const &function, size_t repeat, float float_1, floa
   }
   event_count allocate_count = collector.end();
   aggregate << allocate_count;
+  // }
   return aggregate;
 }
 
@@ -137,127 +202,205 @@ void write_to_output(size_t repeat, event_aggregate aggregate, std::string name,
   output.close();
 }
 
-void process_divide_floats(size_t repeat, float float_1, float float_2, std::string name)
+template <class F>
+void process(size_t repeat, float float_1, float float_2, std::string name, F const &function)
 {
-
-  write_to_output(repeat, time_it_ns(divide_floats, repeat, float_1, float_2), name, float_1, float_2);
+  write_to_output(repeat, time_it_ns(function, repeat, float_1, float_2), name, float_1, float_2);
   printf("\n");
 }
-
-void process_multiply_floats(size_t repeat, float float_1, float float_2, std::string name)
+template <class D>
+void process_doubles(size_t repeat, double double_1, double double_2, std::string name, D const &function)
 {
-
-  write_to_output(repeat, time_it_ns(multiply_floats, repeat, float_1, float_2), name, float_1, float_2);
-  printf("\n");
-}
-
-void process_add_floats(size_t repeat, float float_1, float float_2, std::string name)
-{
-
-  write_to_output(repeat, time_it_ns(add_floats, repeat, float_1, float_2), name, float_1, float_2);
-  printf("\n");
-}
-
-void process_sub_floats(size_t repeat, float float_1, float float_2, std::string name)
-{
-
-  write_to_output(repeat, time_it_ns(sub_floats, repeat, float_1, float_2), name, float_1, float_2);
-  printf("\n");
+  write_to_output(repeat, time_it_ns(function, repeat, double_1, double_2), name, double_1, double_2);
 }
 
 int main()
 {
+  size_t len = 10;
+  size_t len_double = 12;
   float args[10] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10};
+  double args_double[12] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10, 1.0e200, 1.0e-300};
   float float_1;
   float float_2;
-  size_t repeat = 1000000;
+  double double_1;
+  double double_2;
+  size_t repeat = 4000000;
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_divide_floats(repeat, float_1, float_2, "Divide");
-      process_divide_floats(repeat, float_2, float_1, "Divide");
+      process(repeat, float_1, float_2, "Multiply", multiply_floats);
     }
   }
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_multiply_floats(repeat, float_1, float_2, "Mulitply");
-      process_multiply_floats(repeat, float_2, float_1, "Multiply");
+      process(repeat, float_1, float_2, "Divide", divide_floats);
     }
   }
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_add_floats(repeat, float_1, float_2, "Add");
-      process_add_floats(repeat, float_2, float_1, "Add");
+      process(repeat, float_1, float_2, "Add", add_floats);
     }
   }
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_sub_floats(repeat, float_1, float_2, "Sub");
-      process_sub_floats(repeat, float_2, float_1, "Sub");
+      process(repeat, float_1, float_2, "Sub", sub_floats);
     }
   }
 
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "MultiplyDouble", multiply_doubles);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "DivideDouble", divide_doubles);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "AddDouble", add_doubles);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "SubDouble", sub_doubles);
+    }
+  }
+
+// enable ftz/daz on different platforms
+#if defined(__linux__) && defined(__x86_64__)
+  printf("linux x86");
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON)
+  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON)
+#elif __linux__ && __arm__
+  printf("linux arm");
   asm("vmsr fpscr,%0" ::"r"(1 << 24));
-  for (size_t i = 0; i < 10; i++)
+#elif __APPLE__ && __aarch64__
+  int r = fesetenv(FE_DFL_DISABLE_DENORMS_ENV);
+  if (r != 0)
+  {
+    fprintf(stderr, "fesetenv returned %d\n", r);
+    return -1;
+  }
+  printf("fesetenv returned %d\n", r);
+#endif
+
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_divide_floats(repeat, float_1, float_2, "DivideFTZ");
-      process_divide_floats(repeat, float_2, float_1, "DivideFTZ");
+      process(repeat, float_1, float_2, "MultiplyFTZ", multiply_floats);
     }
   }
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_multiply_floats(repeat, float_1, float_2, "MulitplyFTZ");
-      process_multiply_floats(repeat, float_2, float_1, "MultiplyFTZ");
+      process(repeat, float_1, float_2, "DivideFTZ", divide_floats);
     }
   }
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_add_floats(repeat, float_1, float_2, "AddFTZ");
-      process_add_floats(repeat, float_2, float_1, "AddFTZ");
+      process(repeat, float_1, float_2, "AddFTZ", add_floats);
     }
   }
 
-  for (size_t i = 0; i < 10; i++)
+  for (size_t i = 0; i < len; i++)
   {
     float_1 = args[i];
-    for (size_t j = 0; j < 10; j++)
+    for (size_t j = 0; j < len; j++)
     {
       float_2 = args[j];
-      process_sub_floats(repeat, float_1, float_2, "SubFTZ");
-      process_sub_floats(repeat, float_2, float_1, "SubFTZ");
+      process(repeat, float_1, float_2, "SubFTZ", sub_floats);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "MultiplyDoubleFTZ", multiply_doubles);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "DivideDoubleFTZ", divide_doubles);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "AddDoubleFTZ", add_doubles);
+    }
+  }
+
+  for (size_t i = 0; i < len_double; i++)
+  {
+    double_1 = args_double[i];
+    for (size_t j = 0; j < len_double; j++)
+    {
+      double_2 = args_double[j];
+      process_doubles(repeat, double_1, double_2, "SubDoubleFTZ", sub_doubles);
     }
   }
 
