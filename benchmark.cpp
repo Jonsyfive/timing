@@ -309,8 +309,8 @@ int main()
 // enable ftz/daz on different platforms
 #if defined(__linux__) && defined(__x86_64__)
   printf("linux x86");
-  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON)
-  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON)
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 #elif __linux__ && __arm__
   printf("linux arm");
   asm("vmsr fpscr,%0" ::"r"(1 << 24));
