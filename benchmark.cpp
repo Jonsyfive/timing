@@ -148,18 +148,23 @@ event_aggregate time_it_ns(T const &function, size_t repeat, float float_1, floa
     float ts = function(1, float_1, float_2);
     if (ts < 0)
     {
-      printf("bug\n");
+      ts = 2;
     }
   }
   // for (size_t i = 0; i < repeat; i++) {
+  // auto start = std::chrono::high_resolution_clock::now();
+
   collector.start();
   float ts = function(repeat, float_1, float_2);
   if (ts < 0)
   {
-    printf("bug\n");
+    ts = 2;
   }
   event_count allocate_count = collector.end();
   aggregate << allocate_count;
+  // auto finish = std::chrono::high_resolution_clock::now();
+  // std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(finish - start).count() << "ns\n";
+
   // }
   return aggregate;
 }
@@ -202,6 +207,15 @@ void write_to_output(size_t repeat, event_aggregate aggregate, std::string name,
   output.close();
 }
 
+void write_to_output_double(size_t repeat, event_aggregate aggregate, std::string name, double double_1, double double_2)
+{
+  std::ofstream output;
+  output.open(name + ".txt", std::ios_base::app);
+
+  output << name << " " << aggregate.cycles() / repeat << " " << aggregate.best.instructions() / aggregate.best.cycles() << " " << double_1 << " " << double_2 << "\n";
+  output.close();
+}
+
 template <class F>
 void process(size_t repeat, float float_1, float float_2, std::string name, F const &function)
 {
@@ -211,15 +225,15 @@ void process(size_t repeat, float float_1, float float_2, std::string name, F co
 template <class D>
 void process_doubles(size_t repeat, double double_1, double double_2, std::string name, D const &function)
 {
-  write_to_output(repeat, time_it_ns(function, repeat, double_1, double_2), name, double_1, double_2);
+  write_to_output_double(repeat, time_it_ns(function, repeat, double_1, double_2), name, double_1, double_2);
 }
 
 int main()
 {
   size_t len = 10;
-  size_t len_double = 12;
+  size_t len_double = 13;
   float args[10] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10};
-  double args_double[12] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10, 1.0e200, 1.0e-320};
+  double args_double[13] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10, 1.0e200, 1.0e-320, 1.0e-300};
   float float_1;
   float float_2;
   double double_1;
