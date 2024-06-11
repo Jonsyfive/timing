@@ -219,7 +219,7 @@ int main()
   size_t len = 10;
   size_t len_double = 12;
   float args[10] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10};
-  double args_double[12] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10, 1.0e200, 1.0e-300};
+  double args_double[12] = {0.0, 1.0, 255, 256, 257, 1.0e-42, 1.0e-41, 1.0e-30, 1.0e30, 1.0e10, 1.0e200, 1.0e-320};
   float float_1;
   float float_2;
   double double_1;
