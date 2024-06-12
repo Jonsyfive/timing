@@ -169,6 +169,33 @@ event_aggregate time_it_ns(T const &function, size_t repeat, float float_1, floa
   return aggregate;
 }
 
+template <class T>
+event_aggregate time_it_ns_double(T const &function, size_t repeat, double double_1, double double_2)
+{
+  event_aggregate aggregate{};
+
+  // warm up the cache:
+  for (size_t i = 0; i < 1000; i++)
+  {
+    double ts = function(1, double_1, double_2);
+    if (ts < 0)
+    {
+      printf("bug\n");
+    }
+  }
+  // for (size_t i = 0; i < repeat; i++) {
+  collector.start();
+  double ts = function(repeat, double_1, double_2);
+  if (ts < 0)
+  {
+    printf("bug\n");
+  }
+  event_count allocate_count = collector.end();
+  aggregate << allocate_count;
+  // }
+  return aggregate;
+}
+
 void pretty_print(size_t number_of_floats, std::string name,
                   event_aggregate aggregate)
 {
@@ -225,7 +252,7 @@ void process(size_t repeat, float float_1, float float_2, std::string name, F co
 template <class D>
 void process_doubles(size_t repeat, double double_1, double double_2, std::string name, D const &function)
 {
-  write_to_output_double(repeat, time_it_ns(function, repeat, double_1, double_2), name, double_1, double_2);
+  write_to_output_double(repeat, time_it_ns_double(function, repeat, double_1, double_2), name, double_1, double_2);
 }
 
 int main()
